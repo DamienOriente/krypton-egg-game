@@ -67,8 +67,8 @@
 Il te faut **Node.js 22+**. Ensuite :
 
 ```bash
-git clone https://github.com/DamienOriente/crypton-egg-game.git
-cd crypton-egg-game
+git clone https://github.com/DamienOriente/krypton-egg-game.git
+cd krypton-egg-game
 npm install
 npm run dev
 ```
