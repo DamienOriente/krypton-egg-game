@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Krypton Egg — Audio audition</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        padding: 16px 20px 48px;
+        background: #0a0d13;
+        color: #d5dbe6;
+        font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      h2 {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #7d8aa3;
+        margin: 22px 0 6px;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+      button {
+        background: #171e2c;
+        color: inherit;
+        border: 1px solid #2a3650;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #212c42;
+      }
+      button.primary {
+        background: #1f5f50;
+        border-color: #33876f;
+      }
+      button.on {
+        background: #2a5a4d;
+        border-color: #3d8f78;
+      }
+      label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-right: 16px;
+      }
+      input[type='range'] {
+        width: 170px;
+      }
+      output {
+        min-width: 3.5em;
+        color: #e3e9f3;
+        font-variant-numeric: tabular-nums;
+      }
+      #status,
+      #log {
+        color: #e3e9f3;
+      }
+      #log {
+        margin-top: 6px;
+        min-height: 1.4em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Krypton Egg — audio audition</h1>
+    <div class="row">
+      <button id="unlock" class="primary">Unlock audio</button>
+      <span id="status">locked</span>
+    </div>
+    <div id="app"></div>
+    <div id="log"></div>
+    <script type="module" src="/src/audio/test-page.ts"></script>
+  </body>
+</html>
