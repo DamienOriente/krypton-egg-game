@@ -1,3 +1,4 @@
+import { audio } from './audio/audio';
 import { VIEW_H, VIEW_W } from './config';
 import { input } from './core/input';
 import { Game, toggleFullscreen } from './game/game';
@@ -16,6 +17,11 @@ input.attach(canvas);
 // Warm the sprite bank before the first frame so the title never hitches.
 sprites();
 const game = new Game(ctx);
+// The desktop build allows audio without a gesture (see electron/main.js): play the title theme at once.
+if (navigator.userAgent.includes('Electron/')) {
+  audio.unlock();
+  audio.playMusic('title');
+}
 if (import.meta.env.DEV) {
   // Dev-only console handle for QA (autopilot, stage skipping); stripped from production builds.
   Object.assign(window, { __ke: { game } });

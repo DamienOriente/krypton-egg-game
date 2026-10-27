@@ -1,0 +1,94 @@
+name: Desktop builds
+
+# Tag push (v*) builds the Mac and Windows apps and publishes them as a GitHub release.
+# Manual runs only build and keep the binaries as workflow artifacts.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            target: --mac
+            binary: release/Krypton-Egg-mac.dmg
+          - name: Windows
+            os: windows-latest
+            target: --win
+            binary: release/Krypton-Egg-windows.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm run build
+
+      - name: Package
+        run: npx electron-builder ${{ matrix.target }} --publish never
+        env:
+          # No signing certificate: the macOS app is ad-hoc signed (package.json > build.mac.identity).
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Smoke test (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          "release/mac-universal/Krypton Egg.app/Contents/MacOS/Krypton Egg" --smoke-test="$RUNNER_TEMP/smoke.png"
+          test -s "$RUNNER_TEMP/smoke.png"
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $png = Join-Path $env:RUNNER_TEMP 'smoke.png'
+          $p = Start-Process -FilePath 'release/win-unpacked/Krypton Egg.exe' -ArgumentList "--smoke-test=$png" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $png)) { throw "Smoke test failed (exit $($p.ExitCode))" }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.name }}
+          path: ${{ matrix.binary }}
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: smoke-${{ matrix.name }}
+          path: ${{ runner.temp }}/smoke.png
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Krypton Egg $GITHUB_REF_NAME" \
+            --generate-notes
