@@ -64,11 +64,31 @@
 ╚══════════════════════════════════════════════╝
 ```
 
+Pas d'installation compliquée : télécharge le jeu pour ta machine et double-clique.
+
+<p align="center">
+  <a href="https://github.com/DamienOriente/krypton-egg-game/releases/latest/download/Krypton-Egg-mac.dmg"><img alt="Télécharger pour Mac" src="https://img.shields.io/badge/T%C3%89L%C3%89CHARGER-MAC_%C2%B7_.DMG-ffb020?style=for-the-badge&labelColor=0b1022"></a>
+  &nbsp;
+  <a href="https://github.com/DamienOriente/krypton-egg-game/releases/latest/download/Krypton-Egg-windows.exe"><img alt="Télécharger pour Windows" src="https://img.shields.io/badge/T%C3%89L%C3%89CHARGER-WINDOWS_%C2%B7_.EXE-2e69ff?style=for-the-badge&labelColor=0b1022"></a>
+</p>
+
+<p align="center"><sub>Toutes les versions : <a href="https://github.com/DamienOriente/krypton-egg-game/releases">page des releases</a></sub></p>
+
+| | Mac (Intel et Apple Silicon) | Windows 10 / 11 |
+|---|---|---|
+| **1.** | Ouvre `Krypton-Egg-mac.dmg` | Double-clique sur `Krypton-Egg-windows.exe` |
+| **2.** | Glisse **Krypton Egg** dans **Applications** | C'est tout : pas d'installation, le jeu se lance |
+| **Premier lancement** | macOS bloque l'app (développeur non identifié) : **Réglages Système → Confidentialité et sécurité → Ouvrir quand même** | Si SmartScreen s'affiche : **Informations complémentaires → Exécuter quand même** |
+
+> Le jeu n'est pas signé par un certificat Apple ou Microsoft (payants), d'où ces avertissements la première fois. Ensuite, il se lance normalement.
+
+### Pour les développeurs
+
 Il te faut **Node.js 22+**. Ensuite :
 
 ```bash
-git clone https://github.com/DamienOriente/crypton-egg-game.git
-cd crypton-egg-game
+git clone https://github.com/DamienOriente/krypton-egg-game.git
+cd krypton-egg-game
 npm install
 npm run dev
 ```
@@ -80,6 +100,11 @@ Le jeu tourne sur **http://127.0.0.1:5173**. Clique une fois pour réveiller la 
 | `npm run dev` | serveur de dev avec rechargement à chaud |
 | `npm run build` | typecheck strict + bundle de prod dans `dist/` (≈ 60 Ko gzip) |
 | `npm run preview` | sert le build de prod en local |
+| `npm run desktop` | lance le jeu dans sa fenêtre Electron |
+| `npm run dist:mac` | fabrique `release/Krypton-Egg-mac.dmg` (Mac universel) |
+| `npm run dist:win` | fabrique `release/Krypton-Egg-windows.exe` (à lancer sous Windows) |
+
+Pousser un tag `v*` (par exemple `v0.1.0`) déclenche le workflow **Desktop builds** : il fabrique le `.dmg` et le `.exe`, vérifie que chaque app démarre, puis publie une release GitHub.
 
 Une **salle d'écoute** permet de tester chaque bruitage, chaque musique et chaque jingle : **http://127.0.0.1:5173/audio-test.html** (en dev).
 
@@ -218,6 +243,7 @@ Capsule, soleil couchant, théière, bateau pirate, « HAHA », « THE END », �
 - **Physique** : pas fixe à 120 Hz, balle sous-échantillonnée (≤ 6 px par sous-pas) : pas de balle qui traverse les briques à pleine vitesse.
 - **Audio** : Web Audio pur. 55 bruitages synthétisés, 6 musiques et 5 jingles composés note par note pour un séquenceur maison, mixés avec compresseur et limiteur.
 - **Zéro dépendance runtime** : Vite et TypeScript servent uniquement à développer et builder.
+- **Version desktop** : Electron (Chromium embarqué) emballe le même build dans une fenêtre dédiée, avec electron-builder pour le `.dmg` et le `.exe`.
 
 ```text
 src/

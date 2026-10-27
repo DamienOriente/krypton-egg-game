@@ -1,15 +1,90 @@
 {
   "name": "krypton-egg-remake",
+  "productName": "Krypton Egg",
   "private": true,
   "version": "0.1.0",
+  "description": "Remake 2K du casse-briques Krypton Egg (1989)",
+  "author": "Damien Oriente",
+  "homepage": "https://github.com/DamienOriente/krypton-egg-game",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json",
+    "desktop": "vite build && electron .",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never"
+  },
+  "build": {
+    "appId": "io.github.damienoriente.kryptonegg",
+    "productName": "Krypton Egg",
+    "copyright": "Remake de fan · d'après Krypton Egg d'Alexandre Kral (1989)",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.arcade-games",
+      "icon": "build/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "artifactName": "Krypton-Egg-mac.${ext}",
+      "title": "Krypton Egg",
+      "background": "build/dmg-background.png",
+      "window": {
+        "width": 660,
+        "height": 420
+      },
+      "contents": [
+        {
+          "x": 170,
+          "y": 230,
+          "type": "file"
+        },
+        {
+          "x": 490,
+          "y": 230,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "format": "ULFO"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "portable": {
+      "artifactName": "Krypton-Egg-windows.${ext}"
+    },
+    "publish": null
   },
   "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
   }
