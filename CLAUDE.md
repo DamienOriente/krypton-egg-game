@@ -1,6 +1,6 @@
 # CLAUDE.md — Krypton Egg Remake
 
-Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Canvas 2D, Web Audio. Zéro dépendance runtime, zéro asset binaire.
+Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Canvas 2D, Web Audio. Zéro dépendance runtime ; un seul asset binaire : la vidéo du logo DGS (`src/assets/dgs-intro.mp4`, 122 Ko).
 
 ## Décisions d'archi
 
@@ -19,6 +19,9 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - **Version desktop = Electron** (Chromium embarqué, comme les tests : pointer lock, Web Audio, `ctx.filter`), pas Tauri (WebKit sur Mac, pointer lock incertain). Process principal en JS ESM typé par `// @ts-check` (`electron/main.js`, vérifié par `tsconfig.electron.json`), fenêtre unique verrouillée (sandbox, pas de navigation, liens externes vers le navigateur), `autoplayPolicy` libre → musique du titre dès le lancement.
 - Vite en `base: './'` : le même build sert le web et `file://` dans Electron.
 - Packaging electron-builder 26 (config dans `package.json > build`) : DMG universel x64+arm64 (~223 Mo, ULFO) signé **ad-hoc** (`identity: "-"`, `hardenedRuntime: false`), `.exe` Windows **portable** x64. Noms d'artefacts sans version pour les liens `releases/latest/download/...` du README.
+- **Intro DGS** (`game/intro.ts`, écran `intro` de `Game`) : la vidéo muette du logo (4 s, 1080p60, sans piste audio) est dessinée dans le canvas ; le son est un sting synthétisé (`audio.playLogoSting()` → `spawnLogoSting` dans `sfx.ts`), démarré sur l'événement `playing` de la vidéo (synchro mesurée : 1 ms). Navigateur : écran « CLIQUEZ POUR COMMENCER » tant que l'audio n'est pas débloqué ; Electron : `audio.unlock()` au démarrage → l'intro part seule. Un clic/touche passe l'intro (après 0,35 s de vidéo). Retour au titre si la vidéo échoue ou cale.
+  - Calage du sting sur les temps mesurés dans la vidéo : balayage 0,55 → 1,40 s (D/G/S finis à 0,85 / 1,12 / 1,40 s, de 15 % à 84 % de la largeur), sous-titre 1,67 → 1,95 s, fondu 3,30 → 3,90 s. Mi majeur (dominante du thème titre en la mineur). Niveau calé hors ligne à ≈ -17 LUFS momentané max (comme les jingles).
+  - Les textures lourdes (titre + bois du premier plateau, ~150 ms bloquants) sont pré-calculées sur une image fixe de l'intro (`IntroScreen.still`), pas pendant le balayage.
 - Release : `.github/workflows/desktop.yml` — tag `v*` → build Mac + Windows sur runners natifs, smoke test (`--smoke-test=<png>` capture la fenêtre et quitte), puis `gh release create`.
 
 ## Pièges rencontrés
@@ -32,6 +35,8 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - Build Windows depuis un Mac = Wine (Docker) : on le fait sur un runner `windows-latest`.
 - Sans certificat, Gatekeeper / SmartScreen avertissent au premier lancement (procédure dans le README). Le ad-hoc signing évite le message « app endommagée » sur Apple Silicon. Signature + notarisation = compte Apple Developer requis.
 - npm 12 bloque les scripts d'install par défaut : Electron télécharge son binaire au premier lancement, ce n'est pas bloquant.
+- Les délais de l'intro se basent sur l'horloge murale et `video.currentTime`, jamais sur la somme des `dt` : `dt` est plafonné à 0,1 s, donc un onglet throttlé (~1 i/s) fausse tout chronomètre cumulé.
+- QA en console Vite après des rechargements à chaud : les modules de l'app sont servis avec `?t=…` ; un `import('/src/…')` sans ce suffixe crée une **seconde instance** (ex. un `audio` jamais débloqué). Retrouver l'URL réelle via `performance.getEntriesByType('resource')`.
 - Panneau navigateur masqué : les captures d'écran sont figées. Pour la QA visuelle, exporter le canvas (`toBlob`) plutôt que de faire des screenshots.
 
 ## État d'avancement
@@ -39,4 +44,5 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - 2026-10-26 : v0.1 jouable de bout en bout (titre → 60 niveaux → 6 boss → victoire), HUD, pause, game over, codes, scores locaux. Build prod : 181 Ko JS (60 Ko gzip).
 - Équilibrage actuel : PV boss = 22 + 7 × palier, laser 0,45 dégât/tir sur boss, dagues 480 + 2 × niveau px/s. Non validé en partie réelle.
 - 2026-10-27 : builds desktop (Electron) — DMG Mac universel testé localement (smoke test OK), `.exe` Windows produit par la CI.
+- 2026-10-27 : intro animée DGS avec jingle synthétisé (web + desktop).
 - Reste à valider à l'oreille : SFX et musiques (vérifiés par mesure uniquement, voir `/audio-test.html`).

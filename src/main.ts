@@ -2,7 +2,6 @@ import { audio } from './audio/audio';
 import { VIEW_H, VIEW_W } from './config';
 import { input } from './core/input';
 import { Game, toggleFullscreen } from './game/game';
-import { background } from './render/background';
 import { sprites } from './render/sprites';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement | null;
@@ -17,11 +16,9 @@ input.attach(canvas);
 // Warm the sprite bank before the first frame so the title never hitches.
 sprites();
 const game = new Game(ctx);
-// The desktop build allows audio without a gesture (see electron/main.js): play the title theme at once.
-if (navigator.userAgent.includes('Electron/')) {
-  audio.unlock();
-  audio.playMusic('title');
-}
+// The desktop build allows audio without a gesture (see electron/main.js): unlocking now lets the
+// logo intro start with its sound right away instead of waiting on the "press start" screen.
+if (navigator.userAgent.includes('Electron/')) audio.unlock();
 if (import.meta.env.DEV) {
   // Dev-only console handle for QA (autopilot, stage skipping); stripped from production builds.
   Object.assign(window, { __ke: { game } });
@@ -46,5 +43,3 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-// Build the first playfield (wood grain is per-pixel) while the title is idle.
-setTimeout(() => background(0), 400);

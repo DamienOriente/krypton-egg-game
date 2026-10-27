@@ -11,7 +11,7 @@
   <img alt="Vite 8" src="https://img.shields.io/badge/Vite-8-ffb020?style=for-the-badge&logo=vite&logoColor=white&labelColor=0b1022">
   <img alt="Canvas 2D 2560x1440" src="https://img.shields.io/badge/Canvas_2D-2560%C3%971440-46e04a?style=for-the-badge&labelColor=0b1022">
   <img alt="Web Audio 100% synthé" src="https://img.shields.io/badge/Web_Audio-100%25_synth%C3%A9-ff5fc8?style=for-the-badge&labelColor=0b1022">
-  <img alt="0 asset binaire" src="https://img.shields.io/badge/assets_binaires-0-e3262c?style=for-the-badge&labelColor=0b1022">
+  <img alt="1 seul asset : le logo DGS" src="https://img.shields.io/badge/assets-1_seul_(logo_DGS)-e3262c?style=for-the-badge&labelColor=0b1022">
 </p>
 
 <p align="center"><img src="docs/readme/divider.png" alt="" width="100%"></p>
@@ -22,7 +22,7 @@
     <td>
       <b>1989.</b> Un étudiant belge, Alexandre Kral, sort sur Atari ST et Amiga un casse-briques qui va faire chauffer les souris de toute une génération : <b>Krypton Egg</b>. Porté sur PC par C2V en 1994, il passe de disquette en disquette dans les cours de récré. À l'époque, le magazine <i>PC Loisirs</i> le présentait comme le meilleur casse-briques du monde.
       <br><br>
-      <b>2026.</b> Le revoilà en <b>2560×1440</b>, dans ton navigateur. Briques en verre glossy, cadre en bois veiné, plaques de métal teal, HUD néon : tout est dessiné par le code au lancement. Pas un fichier image, pas un sample, pas un MP3. Les sons et les musiques sont synthétisés en direct par un mini-tracker maison.
+      <b>2026.</b> Le revoilà en <b>2560×1440</b>, dans ton navigateur. Briques en verre glossy, cadre en bois veiné, plaques de métal teal, HUD néon : tout est dessiné par le code au lancement. Pas un sprite, pas un sample, pas un MP3 : le seul fichier embarqué est la vidéo du logo DGS de l'intro. Les sons et les musiques, y compris le jingle du logo, sont synthétisés en direct par un mini-tracker maison.
     </td>
   </tr>
 </table>
@@ -244,6 +244,7 @@ Capsule, soleil couchant, théière, bateau pirate, « HAHA », « THE END », �
 - **Audio** : Web Audio pur. 55 bruitages synthétisés, 6 musiques et 5 jingles composés note par note pour un séquenceur maison, mixés avec compresseur et limiteur.
 - **Zéro dépendance runtime** : Vite et TypeScript servent uniquement à développer et builder.
 - **Version desktop** : Electron (Chromium embarqué) emballe le même build dans une fenêtre dédiée, avec electron-builder pour le `.dmg` et le `.exe`.
+- **Intro DGS** : la vidéo du logo est dessinée dans le canvas du jeu, et son jingle est synthétisé par le moteur audio, calé sur l'animation (balayage stéréo, une note par lettre, impact au verrouillage du logo). Sur le web, un écran « CLIQUEZ POUR COMMENCER » sert de geste pour autoriser le son ; la version desktop la lance directement. Un clic la passe.
 
 ```text
 src/
@@ -257,7 +258,7 @@ src/
 ## ▓▒░ CRÉDITS ░▒▓
 
 - **Krypton Egg** original : Alexandre Kral (1989, Atari ST / Amiga), version PC par C2V (1994).
-- **Remake 2K** : Damien Oriente. Graphismes, sons et musiques recréés de zéro ; aucun élément du jeu d'origine n'est réutilisé.
+- **Remake 2K** : Damien Oriente, Diginumia Game Studio. Graphismes, sons et musiques recréés de zéro ; aucun élément du jeu d'origine n'est réutilisé.
 - Remake de fan, sans lien avec les ayants droit du jeu original.
 
 <p align="center"><img src="docs/readme/divider.png" alt="" width="100%"></p>

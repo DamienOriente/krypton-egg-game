@@ -9,7 +9,7 @@ import { clamp, createKit } from './core';
 import type { Kit } from './core';
 import { Mixer } from './mixer';
 import { SongPlayer, compileSong } from './sequencer';
-import { Thruster, spawnSfx } from './sfx';
+import { Thruster, spawnLogoSting, spawnSfx } from './sfx';
 import { JINGLES, TRACKS } from './songs';
 import type { Voice } from './voice';
 
@@ -255,6 +255,24 @@ export class AudioEngine {
     } catch (err) {
       console.error(`[audio] jingle "${name}" failed`, err);
       return Promise.resolve();
+    }
+  }
+
+  /**
+   * Sound of the DGS logo intro, synced to the 4 s logo video: call it when the video
+   * starts playing. Follows the SFX setting. Returns a function that cuts it (skip).
+   */
+  playLogoSting(): () => void {
+    const ctx = this.ctx;
+    const kit = this.kit;
+    const mixer = this.mixer;
+    if (!this.settings.sfx || !ctx || !kit || !mixer || !this.canSchedule(ctx)) return () => undefined;
+    try {
+      const voice = spawnLogoSting(kit, ctx.currentTime + SCHEDULE_LEAD, mixer.sfx, mixer.reverb);
+      return () => voice.kill(ctx.currentTime);
+    } catch (err) {
+      console.error('[audio] logo sting failed', err);
+      return () => undefined;
     }
   }
 
