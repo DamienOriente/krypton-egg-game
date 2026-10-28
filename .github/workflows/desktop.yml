@@ -1,6 +1,8 @@
 name: Desktop builds
 
-# Tag push (v*) builds the Mac and Windows apps and publishes them as a GitHub release.
+# Tag push (v*) builds the Mac and Windows apps and publishes them as a GitHub release,
+# then pushes the web, Mac and Windows builds to itch.io once that is configured
+# (repository variable ITCH_TARGET + secret BUTLER_API_KEY, see docs/itch/SETUP.md).
 # Manual runs only build and keep the binaries as workflow artifacts.
 on:
   push:
@@ -72,6 +74,26 @@ jobs:
           path: ${{ matrix.binary }}
           if-no-files-found: error
 
+      # itch.io wants the runnable folder, not the .dmg / portable .exe. A tarball keeps the
+      # .app symlinks and executable bits intact on their way to the publishing job.
+      - name: Pack runnable build for itch.io
+        if: startsWith(github.ref, 'refs/tags/v') && vars.ITCH_TARGET != ''
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            tar -czf "$RUNNER_TEMP/itch-mac.tgz" -C release/mac-universal "Krypton Egg.app"
+          else
+            tar -czf "$RUNNER_TEMP/itch-windows.tgz" -C release win-unpacked
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v') && vars.ITCH_TARGET != ''
+        with:
+          name: itch-${{ matrix.name }}
+          path: ${{ runner.temp }}/itch-*.tgz
+          if-no-files-found: error
+          retention-days: 3
+
       - uses: actions/upload-artifact@v7
         # Keep the capture and report when the smoke test fails: that is when they matter.
         if: always()
@@ -103,3 +125,62 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "Krypton Egg $GITHUB_REF_NAME" \
             --generate-notes
+
+  itch:
+    name: Publish to itch.io
+    # Skipped until the itch.io page exists and the repository variable ITCH_TARGET is set.
+    if: startsWith(github.ref, 'refs/tags/v') && vars.ITCH_TARGET != ''
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_VERSION: 15.32.0
+      ITCH_TARGET: ${{ vars.ITCH_TARGET }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The browser version: same static build as the desktop apps load from file://.
+      - run: npm run build
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: itch-*
+          path: itch-artifacts
+          merge-multiple: true
+
+      # Each channel is a folder holding one named game folder, so a browser download
+      # unzips to "Krypton Egg.app" / "Krypton Egg/" instead of loose files.
+      - name: Unpack desktop builds
+        run: |
+          mkdir -p itch/mac itch/windows
+          tar -xzf itch-artifacts/itch-mac.tgz -C itch/mac
+          tar -xzf itch-artifacts/itch-windows.tgz -C itch/windows
+          mv itch/windows/win-unpacked "itch/windows/Krypton Egg"
+          ls -la itch/mac itch/windows
+
+      - name: Install butler
+        run: |
+          curl -fsSL -o butler.zip "https://broth.itch.zone/butler/linux-amd64/${BUTLER_VERSION}/archive/default"
+          unzip -q butler.zip -d butler
+          chmod +x butler/butler
+          butler/butler -V
+
+      - name: Push to itch.io
+        # The API key is only exposed to this step, not to npm install scripts.
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo "::error::Le secret BUTLER_API_KEY est manquant (voir docs/itch/SETUP.md)."
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          butler/butler push dist "$ITCH_TARGET:html5" --userversion "$version"
+          butler/butler push itch/mac "$ITCH_TARGET:mac" --userversion "$version"
+          butler/butler push itch/windows "$ITCH_TARGET:windows" --userversion "$version"
