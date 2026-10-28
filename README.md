@@ -104,7 +104,7 @@ Le jeu tourne sur **http://127.0.0.1:5173**. Clique une fois pour réveiller la 
 | `npm run dist:mac` | fabrique `release/Krypton-Egg-mac.dmg` (Mac universel) |
 | `npm run dist:win` | fabrique `release/Krypton-Egg-windows.exe` (à lancer sous Windows) |
 
-Pousser un tag `v*` (par exemple `v0.1.0`) déclenche le workflow **Desktop builds** : il fabrique le `.dmg` et le `.exe`, vérifie que chaque app démarre, puis publie une release GitHub.
+Pousser un tag `v*` (par exemple `v0.1.0`) déclenche le workflow **Desktop builds** : il fabrique le `.dmg` et le `.exe`, vérifie que chaque app démarre, puis publie une release GitHub. Une fois configuré, le même tag pousse aussi les versions web, Mac et Windows sur **itch.io** (voir [`docs/itch/SETUP.md`](docs/itch/SETUP.md)).
 
 Une **salle d'écoute** permet de tester chaque bruitage, chaque musique et chaque jingle : **http://127.0.0.1:5173/audio-test.html** (en dev).
 
