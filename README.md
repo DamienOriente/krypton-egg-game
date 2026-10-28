@@ -118,8 +118,10 @@ Une **salle d'écoute** permet de tester chaque bruitage, chaque musique et chaq
 | Lancer la balle | <kbd>clic gauche</kbd> | <kbd>Espace</kbd> / <kbd>Entrée</kbd> |
 | Tirer (bonus Lasers) | <kbd>clic droit</kbd> | <kbd>Espace</kbd> maintenu |
 | Voler (bonus Fusée) | haut / bas | <kbd>↑</kbd> <kbd>↓</kbd> ou <kbd>Z</kbd> <kbd>S</kbd> |
-| Pause et libérer la souris | | <kbd>P</kbd> / <kbd>Échap</kbd> |
-| Musique / bruitages | | <kbd>M</kbd> / <kbd>N</kbd> |
+| Pause et libérer la souris | | <kbd>Échap</kbd> |
+| Barrière permanente (marche / arrêt) | | <kbd>P</kbd> |
+| Multiplier les balles ×3 (jusqu'à 243) | | <kbd>M</kbd> en jeu |
+| Musique / bruitages | | <kbd>M</kbd> dans les menus / <kbd>N</kbd> |
 | Plein écran | | <kbd>F</kbd> |
 
 Sur écran tactile : glisse pour déplacer, touche pour lancer.

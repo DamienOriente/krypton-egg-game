@@ -30,7 +30,7 @@ canvas.addEventListener('mousedown', gesture);
 canvas.addEventListener('touchstart', gesture, { passive: true });
 window.addEventListener('keydown', (e) => {
   gesture();
-  if (e.code === 'KeyF' && !e.repeat && !game.typing) toggleFullscreen();
+  if (e.key.toLowerCase() === 'f' && !e.repeat && !game.typing) toggleFullscreen();
 });
 
 let last = performance.now();

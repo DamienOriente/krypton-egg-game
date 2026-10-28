@@ -67,6 +67,8 @@ const LIFE_THRESHOLDS = [20000, 60000, 120000];
 export class Session {
   score = 0;
   lives = START_LIVES;
+  /** P key: bottom barrier that never expires, kept across levels and lost lives. */
+  barrier = false;
   stageIndex: number;
   readonly startHigh = highScore();
   private lifeIndex = 0;
