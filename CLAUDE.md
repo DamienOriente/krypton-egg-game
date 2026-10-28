@@ -56,4 +56,5 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - 2026-10-28 : touches P (barrière permanente) et M (balles ×3).
 - 2026-10-28 : séisme (son + image) à l'arrivée et à la mort des boss ; musique continue pendant les phases de boss.
 - 2026-10-28 : générique de fin « Claudo » + 23 gags memes, menu CRÉDITS.
+- 2026-10-28 : release v0.2.0 (intro DGS, touches P/M, séisme des boss, générique).
 - Reste à valider à l'oreille : SFX et musiques (vérifiés par mesure uniquement, voir `/audio-test.html`).
