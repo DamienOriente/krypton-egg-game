@@ -46,19 +46,25 @@ jobs:
           # No signing certificate: the macOS app is ad-hoc signed (package.json > build.mac.identity).
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      # Waits for the title screen (logo intro played), captures it and fails on a blank picture.
       - name: Smoke test (macOS)
         if: runner.os == 'macOS'
         run: |
-          "release/mac-universal/Krypton Egg.app/Contents/MacOS/Krypton Egg" --smoke-test="$RUNNER_TEMP/smoke.png"
-          test -s "$RUNNER_TEMP/smoke.png"
+          status=0
+          "release/mac-universal/Krypton Egg.app/Contents/MacOS/Krypton Egg" --smoke-test="$RUNNER_TEMP/smoke.png" || status=$?
+          if [ -f "$RUNNER_TEMP/smoke.txt" ]; then cat "$RUNNER_TEMP/smoke.txt"; fi
+          exit $status
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $png = Join-Path $env:RUNNER_TEMP 'smoke.png'
+          $txt = Join-Path $env:RUNNER_TEMP 'smoke.txt'
           $p = Start-Process -FilePath 'release/win-unpacked/Krypton Egg.exe' -ArgumentList "--smoke-test=$png" -Wait -PassThru
-          if ($p.ExitCode -ne 0 -or -not (Test-Path $png)) { throw "Smoke test failed (exit $($p.ExitCode))" }
+          # A GUI app has no console on Windows: the report file is the only output.
+          if (Test-Path $txt) { Get-Content $txt }
+          if ($p.ExitCode -ne 0) { throw "Smoke test failed (exit $($p.ExitCode))" }
 
       - uses: actions/upload-artifact@v7
         with:
@@ -67,9 +73,14 @@ jobs:
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v7
+        # Keep the capture and report when the smoke test fails: that is when they matter.
+        if: always()
         with:
           name: smoke-${{ matrix.name }}
-          path: ${{ runner.temp }}/smoke.png
+          path: |
+            ${{ runner.temp }}/smoke.png
+            ${{ runner.temp }}/smoke.txt
+          if-no-files-found: warn
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
