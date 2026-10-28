@@ -42,6 +42,7 @@ export class Game {
   private victoryEgg: Boss | null = null;
 
   constructor(private readonly ctx: Ctx) {
+    document.documentElement.dataset.screen = this.screen;
     input.onLockChange = (locked) => {
       if (!locked && this.screen === 'play' && !this.paused && this.play && !this.play.gameOver) this.setPaused(true);
     };
@@ -121,6 +122,8 @@ export class Game {
   private go(screen: Screen): void {
     this.screen = screen;
     this.screenT = 0;
+    // Read by the desktop smoke test (electron/main.js) to know when the title is up.
+    document.documentElement.dataset.screen = screen;
   }
 
   // ----------------------------------------------------------------- title
