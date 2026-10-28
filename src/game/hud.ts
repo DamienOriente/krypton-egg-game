@@ -13,7 +13,7 @@ export interface HudData {
   levelLabel: string;
   levelName: string;
   bricksLeft: number | null;
-  effects: { id: PowerId; left: number }[];
+  effects: { id: PowerId; left: number; permanent?: boolean }[];
   boss: { name: string; hp: number; max: number } | null;
   time: number;
 }
@@ -123,6 +123,11 @@ function drawRightPanel(ctx: Ctx, d: HudData): void {
     ctx.drawImage(cap, cx - w / 2, y, w, h);
     ctx.globalAlpha = 1;
     y += h + 10;
+    if (e.permanent) {
+      drawText(ctx, 'PERMANENT', cx, y - 2, SIDE_SMALL, 'center', 0.85);
+      y += 34;
+      continue;
+    }
     const bw = p.w - 40;
     const frac = Math.max(0, Math.min(1, e.left / def.duration));
     roundRectPath(ctx, cx - bw / 2, y, bw, 10, 5);

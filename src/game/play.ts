@@ -73,6 +73,9 @@ const ROCKET_RANGE = 430;
 const COMBO_SCALE = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
 const BALL_R = 13;
 const BALL_R_BIG = 22;
+/** Cap for the multi-ball power-up (unchanged) and for the M key (×3 per press: 1 → 3 → 9 → 27 → 81 → 243). */
+const MULTI_POWER_MAX = 12;
+const MULTI_KEY_MAX = 243;
 const pan = (x: number): number => clamp((x - VIEW_W / 2) / (VIEW_W / 2), -1, 1) * 0.8;
 
 export class Play implements BossHost {
@@ -173,6 +176,11 @@ export class Play implements BossHost {
   }
   get shielded(): boolean {
     return this.effects.has('shield') || this.invuln > 0;
+  }
+
+  /** Bottom barrier: the timed Bouclier power-up or the permanent one toggled with P. */
+  private get barrierUp(): boolean {
+    return this.session.barrier || this.effects.has('shield');
   }
   get enemyCount(): number {
     return this.enemies.length;
@@ -276,6 +284,8 @@ export class Play implements BossHost {
   // Input (once per rendered frame)
 
   frameInput(dt: number): void {
+    if (input.keyPressed('p')) this.toggleBarrier();
+    if (input.keyPressed('m') && this.phase === 'play' && !this.paddle.dead) this.multiplyBalls();
     const p = this.paddle;
     const frozen = this.effects.has('freeze');
     const rocket = this.effects.has('rocket');
@@ -539,7 +549,7 @@ export class Play implements BossHost {
       this.sfx('wall', { pan: pan(b.x), pitch: 2 });
       this.particles.sparks(b.x, b.y - r, '#ffd8a0', 3, 300);
     }
-    if (this.effects.has('shield') && b.dy > 0 && b.y + r > SHIELD_Y) {
+    if (this.barrierUp && b.dy > 0 && b.y + r > SHIELD_Y) {
       b.y = SHIELD_Y - r;
       b.dy = -Math.abs(b.dy);
       this.sfx('shieldHit', { pan: pan(b.x) });
@@ -819,6 +829,49 @@ export class Play implements BossHost {
     this.capsules = this.capsules.filter((c) => c.alive);
   }
 
+  /** Every live ball splits into three (the original plus ±24°), up to `max` balls in play. */
+  private splitBalls(max: number): number {
+    const src = this.balls.filter((b) => b.alive);
+    if (src.some((b) => b.stuck)) this.launchBalls();
+    const extra: Ball[] = [];
+    for (const b of src) {
+      for (const off of [-0.42, 0.42]) {
+        if (this.balls.length + extra.length >= max) break;
+        const a = Math.atan2(b.dx, -b.dy) + off;
+        const nb: Ball = { ...b, dx: Math.sin(a), dy: -Math.abs(Math.cos(a)), stuck: false, trail: [], teleCd: 0 };
+        this.normalize(nb);
+        extra.push(nb);
+      }
+    }
+    this.balls.push(...extra);
+    return extra.length;
+  }
+
+  /** Floating label above the paddle, kept clear of the frame (these strings are ~1000 px wide). */
+  private paddleLabel(text: string, style: TextStyle, life: number): void {
+    const x = clamp(this.paddle.x, FIELD.x + 540, FIELD.right - 540);
+    this.particles.text(x, this.paddle.y - 90, text, style, life);
+  }
+
+  private multiplyBalls(): void {
+    const p = this.paddle;
+    if (this.splitBalls(MULTI_KEY_MAX) === 0) {
+      this.sfx('menuMove', { pitch: -5 });
+      this.paddleLabel(`MAXIMUM ${MULTI_KEY_MAX} BALLES`, STYLE.red, 1);
+      return;
+    }
+    this.sfx('multiball', { pan: pan(p.x) });
+    this.paddleLabel(`${this.balls.length} BALLES`, STYLE.green, 1);
+  }
+
+  private toggleBarrier(): void {
+    const on = (this.session.barrier = !this.session.barrier);
+    const p = this.paddle;
+    this.sfx(on ? 'shield' : 'pause');
+    this.paddleLabel(on ? 'BARRIERE PERMANENTE' : 'BARRIERE COUPEE', on ? STYLE.green : STYLE.red, 1.2);
+    if (on) this.particles.ring(p.x, SHIELD_Y, '#5ae8ff', 260, 0.5);
+  }
+
   private applyPower(id: PowerId, x: number, y: number): void {
     const def = POWERS[id];
     this.sfx(def.good ? 'powerupGood' : 'powerupBad', { pan: pan(x) });
@@ -855,22 +908,9 @@ export class Play implements BossHost {
     const s = specific[id];
     if (s) this.sfx(s, { pan: pan(x) });
     switch (id) {
-      case 'multi': {
-        const src = this.balls.filter((b) => b.alive);
-        if (src.some((b) => b.stuck)) this.launchBalls();
-        const extra: Ball[] = [];
-        for (const b of src) {
-          for (const off of [-0.42, 0.42]) {
-            if (this.balls.length + extra.length >= 12) break;
-            const a = Math.atan2(b.dx, -b.dy) + off;
-            const nb: Ball = { ...b, dx: Math.sin(a), dy: -Math.abs(Math.cos(a)), stuck: false, trail: [], teleCd: 0 };
-            this.normalize(nb);
-            extra.push(nb);
-          }
-        }
-        this.balls.push(...extra);
+      case 'multi':
+        this.splitBalls(MULTI_POWER_MAX);
         break;
-      }
       case 'life':
         this.session.lives = Math.min(9, this.session.lives + 1);
         this.sfx('extraLife');
@@ -980,7 +1020,7 @@ export class Play implements BossHost {
         s.alive = false;
         continue;
       }
-      if (this.effects.has('shield') && s.y + s.r > SHIELD_Y) {
+      if (this.barrierUp && s.y + s.r > SHIELD_Y) {
         s.alive = false;
         this.particles.spray(s.x, SHIELD_Y, 0, -1, '#5ae8ff', 6);
         this.sfx('shieldHit', { pan: pan(s.x), pitch: -3 });
@@ -1098,7 +1138,7 @@ export class Play implements BossHost {
     ctx.clip();
 
     this.field.render(ctx, this.time);
-    if (this.effects.has('shield')) this.renderShield(ctx);
+    if (this.barrierUp) this.renderShield(ctx);
     this.boss?.renderBeam(ctx, this.paddle.y);
 
     for (const c of this.capsules) this.renderCapsule(ctx, c);
@@ -1121,7 +1161,10 @@ export class Play implements BossHost {
       levelLabel: this.levelLabel,
       levelName: this.levelName,
       bricksLeft: this.isBoss ? null : this.field.remaining,
-      effects: [...this.effects].map(([id, left]) => ({ id, left })),
+      effects: [
+        ...(this.session.barrier ? [{ id: 'shield' as const, left: Infinity, permanent: true }] : []),
+        ...[...this.effects].map(([id, left]) => ({ id, left })),
+      ],
       boss: this.boss && this.boss.phase !== 'enter' && this.boss.phase !== 'dead' ? { name: this.boss.name, hp: this.boss.hp, max: this.boss.maxHp } : null,
       time: this.time,
     });
@@ -1129,7 +1172,7 @@ export class Play implements BossHost {
   }
 
   private renderShield(ctx: Ctx): void {
-    const left = this.effects.get('shield') ?? 0;
+    const left = this.session.barrier ? Infinity : (this.effects.get('shield') ?? 0);
     const blink = left < 3 && Math.sin(this.time * 16) < 0 ? 0.4 : 1;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -1257,11 +1300,15 @@ export class Play implements BossHost {
     const img = fire ? (big ? spr.ballFireBig : spr.ballFire) : big ? spr.ballBig : spr.ball;
     const shadow = big ? spr.ballShadowBig : spr.ballShadow;
     const trailColor = fire ? '#3fb8ff' : '#ff9a2a';
+    // Level of detail: trails are 12 additive glows per ball, too many once the M key
+    // has stacked dozens of balls. Sparser points keep 243 balls inside a 60 Hz frame.
+    const n = this.balls.length;
+    const stride = n <= 12 ? 1 : n <= 40 ? 2 : 4;
     for (const b of this.balls) {
-      for (let i = 0; i < b.trail.length; i++) {
+      for (let i = b.trail.length - 1; i >= 0; i -= stride) {
         const t = b.trail[i]!;
         const k = (i + 1) / b.trail.length;
-        drawGlow(ctx, trailColor, t.x, t.y, r * (1.2 + k * 1.4), k * 0.22);
+        drawGlow(ctx, trailColor, t.x, t.y, r * (1.2 + k * 1.4), Math.min(0.5, k * 0.22 * stride));
       }
       ctx.drawImage(shadow, b.x - r - 10 + 10, b.y - r - 10 + 14);
       drawGlow(ctx, trailColor, b.x, b.y, r * 4, 0.45);

@@ -15,6 +15,8 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
   - Onglet masqué → l'AudioContext est suspendu (`ready` repasse à false) pour éviter une musique hachée par le throttling ; reprise au retour.
 - **Niveaux** : `src/levels/levels.ts`, 60 grilles ASCII 18×13 (légende dans `levels/types.ts`). Les boss ne sont pas dans `LEVELS` : séquence des stages dans `game/session.ts` (`STAGES`).
 - Codes de secteur : `NEON`, `ARGO`, `XENO`, `RADO`, `HELI` → niveaux 11, 21, 31, 41, 51.
+- **Touches d'aide (demande de Damien)** : `P` = barrière permanente on/off (`Session.barrier`, gardée d'un niveau à l'autre et après une vie perdue ; même barrière que le bonus Bouclier mais **sans** l'immunité de la raquette) ; `M` en jeu = chaque balle se divise en 3 (`Play.splitBalls`, plafond 243 = 3⁵ ; le bonus Multi garde son plafond de 12). Pause = Échap seul ; `M` = musique hors partie (titre, pause).
+- Raccourcis lettres lus sur `e.key` (`input.keyPressed('m')`), pas sur `e.code` : en AZERTY la touche M est `Semicolon`. Les touches de déplacement restent sur `e.code` (position physique).
 - Handle de debug `window.__ke` exposé **uniquement en dev** (`import.meta.env.DEV`).
 - **Version desktop = Electron** (Chromium embarqué, comme les tests : pointer lock, Web Audio, `ctx.filter`), pas Tauri (WebKit sur Mac, pointer lock incertain). Process principal en JS ESM typé par `// @ts-check` (`electron/main.js`, vérifié par `tsconfig.electron.json`), fenêtre unique verrouillée (sandbox, pas de navigation, liens externes vers le navigateur), `autoplayPolicy` libre → musique du titre dès le lancement.
 - Vite en `base: './'` : le même build sert le web et `file://` dans Electron.
@@ -37,6 +39,7 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - npm 12 bloque les scripts d'install par défaut : Electron télécharge son binaire au premier lancement, ce n'est pas bloquant.
 - Les délais de l'intro se basent sur l'horloge murale et `video.currentTime`, jamais sur la somme des `dt` : `dt` est plafonné à 0,1 s, donc un onglet throttlé (~1 i/s) fausse tout chronomètre cumulé.
 - QA en console Vite après des rechargements à chaud : les modules de l'app sont servis avec `?t=…` ; un `import('/src/…')` sans ce suffixe crée une **seconde instance** (ex. un `audio` jamais débloqué). Retrouver l'URL réelle via `performance.getEntriesByType('resource')`.
+- 243 balles = ~3 500 halos additifs par frame : `renderBalls` espace les points de traînée (1 sur 2 au-delà de 12 balles, 1 sur 4 au-delà de 40). Mesuré au pire cas (243 balles + 1 100 particules, niveau 58) : rendu 15,9 ms en moyenne, p95 19,9 ms ; simulation < 1 ms.
 - Panneau navigateur masqué : les captures d'écran sont figées. Pour la QA visuelle, exporter le canvas (`toBlob`) plutôt que de faire des screenshots.
 
 ## État d'avancement
@@ -45,4 +48,5 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - Équilibrage actuel : PV boss = 22 + 7 × palier, laser 0,45 dégât/tir sur boss, dagues 480 + 2 × niveau px/s. Non validé en partie réelle.
 - 2026-10-27 : builds desktop (Electron) — DMG Mac universel testé localement (smoke test OK), `.exe` Windows produit par la CI.
 - 2026-10-27 : intro animée DGS avec jingle synthétisé (web + desktop).
+- 2026-10-28 : touches P (barrière permanente) et M (balles ×3).
 - Reste à valider à l'oreille : SFX et musiques (vérifiés par mesure uniquement, voir `/audio-test.html`).
