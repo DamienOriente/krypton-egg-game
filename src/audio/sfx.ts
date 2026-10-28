@@ -774,6 +774,108 @@ export class Thruster {
   }
 }
 
+const QUAKE_LEVEL = 0.19;
+
+/**
+ * Continuous earthquake rumble (boss arrival and death), driven like the thruster by an
+ * intensity 0..1. Layers: a detuned sub pair and a brown-noise body pushed through the
+ * drive curve (the harmonics are what laptop speakers can actually reproduce), a
+ * grinding pink band for rock, and crackle for falling debris. Two slow LFOs make it
+ * surge instead of droning.
+ */
+export class Quake {
+  private readonly amp: GainNode;
+  private readonly bodyLp: BiquadFilterNode;
+  private readonly grind: GainNode;
+  private readonly debris: GainNode;
+
+  constructor(kit: Kit, dest: AudioNode, send: AudioNode) {
+    const ctx = kit.ctx;
+    const now = ctx.currentTime;
+    this.amp = ctx.createGain();
+    this.amp.gain.value = 0;
+    this.amp.connect(dest);
+    const sendGain = ctx.createGain();
+    sendGain.gain.value = 0.2;
+    this.amp.connect(sendGain);
+    sendGain.connect(send);
+
+    const surge = ctx.createGain();
+    surge.gain.value = 1;
+    surge.connect(this.amp);
+    for (const [rate, depth] of [[2.3, 0.3], [6.7, 0.16]] as const) {
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = rate;
+      const g = ctx.createGain();
+      g.gain.value = depth;
+      lfo.connect(g);
+      g.connect(surge.gain);
+      lfo.start(now);
+    }
+
+    const drive = ctx.createWaveShaper();
+    drive.curve = kit.drive;
+    drive.oversample = '2x';
+    const pre = ctx.createGain();
+    pre.gain.value = 0.9;
+    pre.connect(drive);
+    drive.connect(surge);
+    for (const [f, level] of [[38, 0.55], [51, 0.4]] as const) {
+      const o = ctx.createOscillator();
+      o.frequency.value = f;
+      const g = ctx.createGain();
+      g.gain.value = level;
+      o.connect(g);
+      g.connect(pre);
+      o.start(now);
+    }
+    this.bodyLp = ctx.createBiquadFilter();
+    this.bodyLp.type = 'lowpass';
+    this.bodyLp.frequency.value = 90;
+    this.bodyLp.Q.value = 0.9;
+    this.bodyLp.connect(pre);
+    loopNoise(kit.noise.brown, this.bodyLp, now, 0, 2.2);
+
+    const grindBp = ctx.createBiquadFilter();
+    grindBp.type = 'bandpass';
+    grindBp.frequency.value = 320;
+    grindBp.Q.value = 0.8;
+    this.grind = ctx.createGain();
+    this.grind.gain.value = 0;
+    grindBp.connect(this.grind);
+    this.grind.connect(surge);
+    loopNoise(kit.noise.pink, grindBp, now, 0.4, 1);
+
+    const debrisBp = ctx.createBiquadFilter();
+    debrisBp.type = 'bandpass';
+    debrisBp.frequency.value = 2200;
+    debrisBp.Q.value = 0.6;
+    this.debris = ctx.createGain();
+    this.debris.gain.value = 0;
+    debrisBp.connect(this.debris);
+    // Debris clatter stays outside the surge: rocks keep falling between swells.
+    this.debris.connect(this.amp);
+    loopNoise(kit.noise.crackle, debrisBp, now, 0.9, 0.8);
+  }
+
+  set(intensity: number, now: number): void {
+    const x = clamp(intensity, 0, 1);
+    this.amp.gain.setTargetAtTime(QUAKE_LEVEL * Math.pow(x, 1.1), now, 0.06);
+    this.bodyLp.frequency.setTargetAtTime(90 + 170 * x, now, 0.1);
+    this.grind.gain.setTargetAtTime(0.5 * x * x, now, 0.1);
+    this.debris.gain.setTargetAtTime(0.9 * x * x * x, now, 0.08);
+  }
+}
+
+function loopNoise(buf: AudioBuffer, dest: AudioNode, now: number, offset: number, rate: number): void {
+  const src = dest.context.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.playbackRate.value = rate;
+  src.connect(dest);
+  src.start(now, offset);
+}
+
 // ---------------------------------------------------------------------------
 // DIGINUMIA Game Studio logo intro.
 

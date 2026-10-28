@@ -251,6 +251,7 @@ export class Game {
     audio.setPaused(p);
     audio.play(p ? 'pause' : 'unpause');
     audio.setThruster(0);
+    audio.setQuake(0);
     if (p) input.exitLock();
   }
 
@@ -308,6 +309,8 @@ export class Game {
         if (code && s.stageIndex + 1 < STAGES.length) {
           this.revealCode = code;
           input.exitLock();
+          // Sector freed: the triumphant theme rises under the reveal sting.
+          audio.playMusic('victory');
           void audio.playJingle('codeReveal');
           this.go('reveal');
           return;
@@ -332,6 +335,7 @@ export class Game {
     this.paused = false;
     audio.setPaused(false);
     audio.setThruster(0);
+    audio.setQuake(0);
     input.exitLock();
     this.play = null;
     this.session = null;

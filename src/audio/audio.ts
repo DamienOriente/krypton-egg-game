@@ -9,7 +9,7 @@ import { clamp, createKit } from './core';
 import type { Kit } from './core';
 import { Mixer } from './mixer';
 import { SongPlayer, compileSong } from './sequencer';
-import { Thruster, spawnLogoSting, spawnSfx } from './sfx';
+import { Quake, Thruster, spawnLogoSting, spawnSfx } from './sfx';
 import { JINGLES, TRACKS } from './songs';
 import type { Voice } from './voice';
 
@@ -120,6 +120,8 @@ export class AudioEngine {
   private kit: Kit | null = null;
   private mixer: Mixer | null = null;
   private thruster: Thruster | null = null;
+  private quake: Quake | null = null;
+  private quakeLevel = 0;
   private unavailable = false;
   private resumePending = false;
   private hiddenSuspend = false;
@@ -153,6 +155,7 @@ export class AudioEngine {
           this.resumePending = false;
           this.syncMusic();
           this.applyThruster();
+          this.applyQuake();
         },
         (err: unknown) => {
           this.resumePending = false;
@@ -171,6 +174,7 @@ export class AudioEngine {
     }
     this.syncMusic();
     this.applyThruster();
+    this.applyQuake();
   }
 
   get ready(): boolean {
@@ -281,6 +285,13 @@ export class AudioEngine {
     this.paused = paused;
     if (this.ctx && this.mixer) this.mixer.setPaused(paused, this.ctx.currentTime);
     this.applyThruster();
+    this.applyQuake();
+  }
+
+  /** Continuous earthquake rumble (boss arrival / death), 0 = silent, 1 = full. Smoothly ramped. */
+  setQuake(intensity: number): void {
+    this.quakeLevel = clamp(finiteOr(intensity, 0), 0, 1);
+    this.applyQuake();
   }
 
   /** Continuous rocket-thruster rumble (filtered noise), 0 = silent, 1 = full. Smoothly ramped. */
@@ -324,6 +335,7 @@ export class AudioEngine {
       }
     }
     this.applyThruster();
+    this.applyQuake();
   }
 
   toggleMusic(): boolean {
@@ -467,6 +479,24 @@ export class AudioEngine {
       }
     }
     this.thruster.set(target, ctx.currentTime);
+  }
+
+  private applyQuake(): void {
+    const ctx = this.ctx;
+    const kit = this.kit;
+    const mixer = this.mixer;
+    if (!ctx || !kit || !mixer) return;
+    const target = this.settings.sfx && !this.paused ? this.quakeLevel : 0;
+    if (!this.quake) {
+      if (target <= 0 || !this.canSchedule(ctx)) return;
+      try {
+        this.quake = new Quake(kit, mixer.sfx, mixer.reverb);
+      } catch (err) {
+        console.error('[audio] quake setup failed', err);
+        return;
+      }
+    }
+    this.quake.set(target, ctx.currentTime);
   }
 
   private reapVoices(now: number): void {

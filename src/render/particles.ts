@@ -185,6 +185,32 @@ export class Particles {
     p.life = p.max = life;
   }
 
+  /** Wood splinter / stone chip shaken loose from the frame (earthquake). */
+  debris(x: number, y: number, color: string): void {
+    const p = this.spawn('shard', x, y);
+    p.vx = rand(-70, 70);
+    p.vy = rand(40, 280);
+    p.gravity = 1900;
+    p.drag = 0.3;
+    p.size = rand(5, 12);
+    p.rot = rand(0, TAU);
+    p.vr = rand(-10, 10);
+    p.life = p.max = rand(0.8, 1.4);
+    p.color = color;
+    p.dark = shade(color, -0.5);
+  }
+
+  /** Light dust puff drifting down (earthquake). */
+  dust(x: number, y: number): void {
+    const p = this.spawn('smoke', x, y);
+    p.vx = rand(-40, 40);
+    p.vy = rand(30, 110);
+    p.drag = 1.2;
+    p.size = rand(18, 40);
+    p.life = p.max = rand(0.8, 1.5);
+    p.color = '#8f8578';
+  }
+
   /** Continuous emitter helpers (trails, thrusters). */
   ember(x: number, y: number, vx: number, vy: number, color: string, size: number, life: number): void {
     const p = this.spawn('ember', x, y);
