@@ -67,6 +67,7 @@ interface Banner {
 }
 
 const SHIELD_Y = 1404;
+const DEBRIS_COLORS = ['#6b4a2c', '#8a6238', '#a07a4a', '#7a8088', '#5a6068'];
 const LASER_SPEED = 2300;
 const CAPSULE_SPEED = 290;
 const ROCKET_RANGE = 430;
@@ -102,6 +103,7 @@ export class Play implements BossHost {
   private waveTimer = 0;
   private readonly effects = new Map<PowerId, number>();
   private shakeAmt = 0;
+  private bossMusicCut = false;
   private combo = 0;
   private spawnTimer = 9;
   private pendingSpawn: EnemyKind | null = null;
@@ -413,6 +415,11 @@ export class Play implements BossHost {
         }
         break;
       case 'bossDying':
+        // The boss theme plays on through the explosions and cuts with the final blast.
+        if (this.boss?.phase === 'dead' && !this.bossMusicCut) {
+          this.bossMusicCut = true;
+          audio.stopMusic(0.6);
+        }
         if (this.boss && this.boss.phase === 'dead' && this.phaseT > 4.2) this.startClear();
         break;
       case 'clear':
@@ -420,6 +427,7 @@ export class Play implements BossHost {
         break;
     }
     audio.setThruster(this.effects.has('rocket') && this.phase === 'play' ? 0.35 + Math.min(0.65, Math.abs(this.paddle.vy) / 900) : 0);
+    this.updateQuake(dt);
   }
 
   private updatePaddle(dt: number): void {
@@ -441,6 +449,22 @@ export class Play implements BossHost {
         if (Math.random() < 0.7)
           this.particles.ember(p.x + side * (p.w / 2 - 40) + rand(-6, 6), p.y + PADDLE_H / 2 + 10, rand(-30, 30), rand(300, 520), pick(['#ffb040', '#ff6a1a', '#fff0a0']), rand(4, 8), rand(0.15, 0.3));
       }
+    }
+  }
+
+  /** Boss earthquake: rumble loudness follows the same intensity as the camera and the debris. */
+  private updateQuake(dt: number): void {
+    const q = this.boss?.quake ?? 0;
+    audio.setQuake(q);
+    if (q < 0.2) return;
+    let n = q * 45 * dt;
+    while (n > 0) {
+      if (Math.random() < n) {
+        const x = rand(FIELD.x + 10, FIELD.right - 10);
+        if (Math.random() < 0.25) this.particles.dust(x, FIELD.y + 8);
+        else this.particles.debris(x, FIELD.y + 4, pick(DEBRIS_COLORS));
+      }
+      n -= 1;
     }
   }
 
@@ -1046,7 +1070,6 @@ export class Play implements BossHost {
     this.phaseT = 0;
     this.vanishPlayObjects();
     this.addScore(10000 * (this.boss?.tier ?? 1), VIEW_W / 2, 700);
-    audio.stopMusic(1.5);
   }
 
   private vanishPlayObjects(): void {
@@ -1122,6 +1145,23 @@ export class Play implements BossHost {
   // Rendering
 
   render(ctx: Ctx): void {
+    const q = this.boss?.quake ?? 0;
+    // Moving the camera exposes the canvas edges: clear them, or the last frame smears there.
+    if (q > 0.005 || this.shakeAmt > 0 || this.drunkK > 0.01) {
+      ctx.fillStyle = '#03050a';
+      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    }
+    // Earthquake: the whole screen rolls, HUD included (two incommensurate sines per axis).
+    ctx.save();
+    if (q > 0.005) {
+      const a = 30 * q;
+      const t = this.time;
+      const ox = a * (0.6 * Math.sin(TAU * 7.3 * t) + 0.4 * Math.sin(TAU * 12.9 * t + 1.3));
+      const oy = a * 1.25 * (0.6 * Math.sin(TAU * 5.1 * t + 0.7) + 0.4 * Math.sin(TAU * 11.7 * t + 2.1));
+      ctx.translate(VIEW_W / 2 + ox, VIEW_H / 2 + oy);
+      ctx.rotate(0.005 * q * Math.sin(TAU * 3.1 * t));
+      ctx.translate(-VIEW_W / 2, -VIEW_H / 2);
+    }
     ctx.save();
     if (this.shakeAmt > 0) ctx.translate(rand(-1, 1) * this.shakeAmt * 0.5, rand(-1, 1) * this.shakeAmt * 0.5);
     if (this.drunkK > 0.01) {
@@ -1169,6 +1209,7 @@ export class Play implements BossHost {
       time: this.time,
     });
     this.renderOverlay(ctx);
+    ctx.restore();
   }
 
   private renderShield(ctx: Ctx): void {
