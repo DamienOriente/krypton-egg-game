@@ -24,6 +24,8 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - **Intro DGS** (`game/intro.ts`, écran `intro` de `Game`) : la vidéo muette du logo (4 s, 1080p60, sans piste audio) est dessinée dans le canvas ; le son est un sting synthétisé (`audio.playLogoSting()` → `spawnLogoSting` dans `sfx.ts`), démarré sur l'événement `playing` de la vidéo (synchro mesurée : 1 ms). Navigateur : écran « CLIQUEZ POUR COMMENCER » tant que l'audio n'est pas débloqué ; Electron : `audio.unlock()` au démarrage → l'intro part seule. Un clic/touche passe l'intro (après 0,35 s de vidéo). Retour au titre si la vidéo échoue ou cale.
   - Calage du sting sur les temps mesurés dans la vidéo : balayage 0,55 → 1,40 s (D/G/S finis à 0,85 / 1,12 / 1,40 s, de 15 % à 84 % de la largeur), sous-titre 1,67 → 1,95 s, fondu 3,30 → 3,90 s. Mi majeur (dominante du thème titre en la mineur). Niveau calé hors ligne à ≈ -17 LUFS momentané max (comme les jingles).
   - Les textures lourdes (titre + bois du premier plateau, ~150 ms bloquants) sont pré-calculées sur une image fixe de l'intro (`IntroScreen.still`), pas pendant le balayage.
+- **Séisme des boss** : `Boss.quake` (0..1) monte pendant la descente (0,3 → 0,8), passe à 1 à l'atterrissage (rugissement + `bigExplosion` grave), reste ≥ 0,65 pendant l'agonie (+0,3 par explosion), 1 à l'explosion finale, puis décroît (0,9/s après l'atterrissage, 0,55/s après la mort). `Play.updateQuake` en tire le grondement (`audio.setQuake` → classe `Quake` de `sfx.ts`, boucle continue comme le propulseur : sub 38/51 Hz + bruit brun saturés, broyage rose, cliquetis de débris), la chute de débris du cadre et le roulis de caméra (tout l'écran, HUD compris, deux sinus par axe + légère rotation). Niveau : ≈ -16 LUFS à 1 (comme les grosses explosions), ≈ -28 à 0,3.
+- **Musique des boss** : le thème `boss` continue pendant l'agonie et se coupe à l'explosion finale ; l'écran « SECTEUR LIBÉRÉ » lance `victory` sous le jingle `codeReveal`.
 - Release : `.github/workflows/desktop.yml` — tag `v*` → build Mac + Windows sur runners natifs, smoke test (`--smoke-test=<png>` capture la fenêtre et quitte), puis `gh release create`.
 
 ## Pièges rencontrés
@@ -40,6 +42,7 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - Les délais de l'intro se basent sur l'horloge murale et `video.currentTime`, jamais sur la somme des `dt` : `dt` est plafonné à 0,1 s, donc un onglet throttlé (~1 i/s) fausse tout chronomètre cumulé.
 - QA en console Vite après des rechargements à chaud : les modules de l'app sont servis avec `?t=…` ; un `import('/src/…')` sans ce suffixe crée une **seconde instance** (ex. un `audio` jamais débloqué). Retrouver l'URL réelle via `performance.getEntriesByType('resource')`.
 - 243 balles = ~3 500 halos additifs par frame : `renderBalls` espace les points de traînée (1 sur 2 au-delà de 12 balles, 1 sur 4 au-delà de 40). Mesuré au pire cas (243 balles + 1 100 particules, niveau 58) : rendu 15,9 ms en moyenne, p95 19,9 ms ; simulation < 1 ms.
+- Les réglages audio sont persistés (`ke.audio`) : une QA qui appuie sur M hors partie (ou pendant une pause automatique) coupe la musique **durablement** dans ce navigateur. Vérifier `localStorage['ke.audio']` avant de conclure à « pas de musique ».
 - Panneau navigateur masqué : les captures d'écran sont figées. Pour la QA visuelle, exporter le canvas (`toBlob`) plutôt que de faire des screenshots.
 
 ## État d'avancement
@@ -49,4 +52,5 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - 2026-10-27 : builds desktop (Electron) — DMG Mac universel testé localement (smoke test OK), `.exe` Windows produit par la CI.
 - 2026-10-27 : intro animée DGS avec jingle synthétisé (web + desktop).
 - 2026-10-28 : touches P (barrière permanente) et M (balles ×3).
+- 2026-10-28 : séisme (son + image) à l'arrivée et à la mort des boss ; musique continue pendant les phases de boss.
 - Reste à valider à l'oreille : SFX et musiques (vérifiés par mesure uniquement, voir `/audio-test.html`).

@@ -54,6 +54,8 @@ export class Boss {
   t = 0;
   phase: Phase = 'enter';
   flash = 0;
+  /** Earthquake intensity 0..1 (arrival and death), read by Play for camera, debris and rumble. */
+  quake = 0;
   private enterT = 0;
   private attackTimer = 3;
   private beam: Beam | null = null;
@@ -102,17 +104,22 @@ export class Boss {
       this.enterT += dt / 2.6;
       const k = easeOutCubic(clamp(this.enterT, 0, 1));
       this.y = -400 + (this.restY() + 400) * k;
-      if (Math.random() < 0.3) host.shake(4);
+      // The ground shakes harder as the egg comes down.
+      this.quake = 0.3 + 0.5 * Math.pow(clamp(this.enterT, 0, 1), 2);
       if (this.enterT >= 1) {
         this.phase = 'fight';
+        this.quake = 1;
         host.sfx('bossRoar');
+        host.sfx('bigExplosion', { pitch: -6, volume: 0.8 });
         host.shake(16);
       }
       return;
     }
     if (this.phase === 'dying') {
       this.dyingT += dt;
+      this.quake = Math.max(this.quake - dt * 1.5, 0.65);
       if (Math.random() < dt * 14) {
+        this.quake = Math.min(1, this.quake + 0.3);
         const a = rand(0, TAU);
         const rr = Math.sqrt(Math.random());
         host.particles.explosion(this.x + Math.cos(a) * this.rx * rr, this.y + Math.sin(a) * this.ry * rr, rand(0.5, 1.1), pick([this.theme.glow, '#ffb040', '#ffffff']));
@@ -126,10 +133,13 @@ export class Boss {
           host.particles.brickBurst(this.x + rand(-this.rx, this.rx), this.y + rand(-this.ry, this.ry), this.theme.shell, rand(-1, 1), rand(-1, 1), 2);
         host.sfx('bossDeath');
         host.shake(40);
+        this.quake = 1;
         this.phase = 'dead';
       }
       return;
     }
+    // Aftershock: the landing tremor fades in ~1 s, the death one in ~1.8 s.
+    this.quake = Math.max(0, this.quake - dt * (this.phase === 'dead' ? 0.55 : 0.9));
     if (this.phase === 'dead') return;
 
     const speed = (0.32 + this.tier * 0.045) * (this.enraged ? 1.45 : 1);
