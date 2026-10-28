@@ -144,7 +144,7 @@ export class TitleScreen {
 
     this.renderLegend(ctx);
 
-    const hint = 'SOURIS : DEPLACER    CLIC GAUCHE : LANCER    CLIC DROIT : TIRER    P / ECHAP : PAUSE    M : MUSIQUE    F : PLEIN ECRAN';
+    const hint = 'CLIC GAUCHE : LANCER    CLIC DROIT : TIRER    ECHAP : PAUSE    P : BARRIERE    M : BALLES X3    F : PLEIN ECRAN';
     drawText(ctx, hint, VIEW_W / 2, VIEW_H - 62, { size: 3.6, top: '#cfe2ff', bottom: '#7f9ccc' }, 'center', 0.8);
     if (!audioReady) {
       const a = 0.5 + 0.5 * Math.sin(this.t * 4);

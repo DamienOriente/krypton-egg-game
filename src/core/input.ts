@@ -18,6 +18,8 @@ export class Input {
 
   private readonly held = new Set<string>();
   private readonly pressed = new Set<string>();
+  /** Lower-cased `key` values pressed this frame: letter shortcuts follow the layout (AZERTY M ≠ KeyM). */
+  private readonly pressedKeys = new Set<string>();
   private readonly buttonsHeld = new Set<number>();
   private readonly buttonsPressed = new Set<number>();
   readonly typed: string[] = [];
@@ -40,6 +42,7 @@ export class Input {
       if (e.code === 'Tab' || e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
       if (!e.repeat) {
         this.pressed.add(e.code);
+        this.pressedKeys.add(e.key.toLowerCase());
         this.anyPressed = true;
       }
       this.held.add(e.code);
@@ -134,6 +137,10 @@ export class Input {
   wasPressed(...codes: string[]): boolean {
     return codes.some((c) => this.pressed.has(c));
   }
+  /** Letter shortcut by the character typed (`'m'`), whatever the keyboard layout. */
+  keyPressed(key: string): boolean {
+    return this.pressedKeys.has(key);
+  }
   mouseDown(button: number): boolean {
     return this.buttonsHeld.has(button);
   }
@@ -143,6 +150,7 @@ export class Input {
 
   endFrame(): void {
     this.pressed.clear();
+    this.pressedKeys.clear();
     this.buttonsPressed.clear();
     this.typed.length = 0;
     this.anyPressed = false;

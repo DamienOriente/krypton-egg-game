@@ -70,8 +70,9 @@ export class Game {
     this.t += dt;
     this.screenT += dt;
     if (!this.typing) {
-      if (input.wasPressed('KeyM')) audio.toggleMusic();
-      if (input.wasPressed('KeyN')) audio.toggleSfx();
+      // In a running game M multiplies the balls (Play.frameInput); it toggles the music everywhere else.
+      if (input.keyPressed('m') && !(this.screen === 'play' && !this.paused)) audio.toggleMusic();
+      if (input.keyPressed('n')) audio.toggleSfx();
     }
 
     switch (this.screen) {
@@ -268,7 +269,7 @@ export class Game {
       if (input.wasPressed('ArrowUp', 'KeyW', 'KeyZ')) this.pauseSel = (this.pauseSel + items.length - 1) % items.length;
       const click = input.mousePressed(0) && this.pauseHover() >= 0;
       // Escape that released the pointer lock may also arrive as a keydown: don't let it unpause instantly.
-      if (input.wasPressed('KeyP', 'Escape') && this.t - this.pausedAt > 0.3) this.setPaused(false);
+      if (input.wasPressed('Escape') && this.t - this.pausedAt > 0.3) this.setPaused(false);
       else if (click || input.wasPressed('Enter', 'Space')) {
         const id = items[this.pauseSel]!.id;
         audio.play('menuSelect');
@@ -280,7 +281,7 @@ export class Game {
       input.consumeMotion();
       return;
     }
-    if (input.wasPressed('KeyP', 'Escape')) {
+    if (input.wasPressed('Escape')) {
       this.setPaused(true);
       return;
     }
