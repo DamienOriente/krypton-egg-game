@@ -26,6 +26,8 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
   - Les textures lourdes (titre + bois du premier plateau, ~150 ms bloquants) sont pré-calculées sur une image fixe de l'intro (`IntroScreen.still`), pas pendant le balayage.
 - **Séisme des boss** : `Boss.quake` (0..1) monte pendant la descente (0,3 → 0,8), passe à 1 à l'atterrissage (rugissement + `bigExplosion` grave), reste ≥ 0,65 pendant l'agonie (+0,3 par explosion), 1 à l'explosion finale, puis décroît (0,9/s après l'atterrissage, 0,55/s après la mort). `Play.updateQuake` en tire le grondement (`audio.setQuake` → classe `Quake` de `sfx.ts`, boucle continue comme le propulseur : sub 38/51 Hz + bruit brun saturés, broyage rose, cliquetis de débris), la chute de débris du cadre et le roulis de caméra (tout l'écran, HUD compris, deux sinus par axe + légère rotation). Niveau : ≈ -16 LUFS à 1 (comme les grosses explosions), ≈ -28 à 0,3.
 - **Musique des boss** : le thème `boss` continue pendant l'agonie et se coupe à l'explosion finale ; l'écran « SECTEUR LIBÉRÉ » lance `victory` sous le jingle `codeReveal`.
+- **Générique de fin** (`game/credits.ts`, écran `credits`) : crawl de rôles AAA absurdes, tous tenus par « CLAUDO » (demande de Damien), ~2 min à 115 px/s, maintenir clic/Espace = ×7, Échap = passer ; s'arrête sur « Développé avec ♥ pour mon pote Raph », puis scène post-générique (l'œuf noir remonte). Lancé par l'écran de victoire (clic ou 14 s) et par l'entrée **CRÉDITS** du menu titre. Musique : `victory`.
+- **Gags « memes »** (`game/memes.ts`, `MemeLayer`) : 23 cartes animées façon GIF de messagerie (cadre blanc, pied « GIF / @CLAUDO », animation hachée à 12 i/s, légendes blanches façon meme), dessinées avec les sprites du jeu. Apparition aléatoire toutes les 2,2–4,2 s dans les marges gauche/droite, tirage en sac (pas de répétition avant d'avoir tout vu). **Pas de vrais GIFs du web** : droits d'auteur (extraits de films/séries/photos) + repo public et binaires distribués. Pour en ajouter : une entrée `MemeDef` (`draw(ctx, t)` sur 560×420).
 - Release : `.github/workflows/desktop.yml` — tag `v*` → build Mac + Windows sur runners natifs, smoke test (`--smoke-test=<png>` capture la fenêtre et quitte), puis `gh release create`.
 
 ## Pièges rencontrés
@@ -53,4 +55,5 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - 2026-10-27 : intro animée DGS avec jingle synthétisé (web + desktop).
 - 2026-10-28 : touches P (barrière permanente) et M (balles ×3).
 - 2026-10-28 : séisme (son + image) à l'arrivée et à la mort des boss ; musique continue pendant les phases de boss.
+- 2026-10-28 : générique de fin « Claudo » + 23 gags memes, menu CRÉDITS.
 - Reste à valider à l'oreille : SFX et musiques (vérifiés par mesure uniquement, voir `/audio-test.html`).
