@@ -25,7 +25,7 @@ export interface MenuItem {
 }
 
 const MENU_Y = 470;
-const MENU_STEP = 92;
+const MENU_STEP = 84;
 const LEGEND = { x: 1795, y: 400, w: 730, h: 940 };
 const LEGEND_NAME: TextStyle = { size: 3.6, top: '#ffffff', bottom: '#bcd4f0' };
 const LEGEND_DESC: TextStyle = { size: 2.4, top: '#9fb8d8', bottom: '#7a92b4' };
@@ -139,7 +139,7 @@ export class TitleScreen {
     for (let i = 0; i < 5; i++) {
       const e = rows[i];
       const line = e ? `${i + 1}.  ${pad(e.score, 7)}   NIV ${pad(e.level, 2)}` : `${i + 1}.  -------   ------`;
-      drawText(ctx, line, VIEW_W / 2, sy + 90 + i * 54, { size: 5, top: '#e8ffd0', bottom: '#3fd23a', glow: '#3cff5a', glowBlur: 8 }, 'center', e ? 1 : 0.4);
+      drawText(ctx, line, VIEW_W / 2, sy + 90 + i * 50, { size: 5, top: '#e8ffd0', bottom: '#3fd23a', glow: '#3cff5a', glowBlur: 8 }, 'center', e ? 1 : 0.4);
     }
 
     this.renderLegend(ctx);

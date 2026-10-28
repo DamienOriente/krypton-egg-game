@@ -8,12 +8,13 @@ import { drawText, STYLE, textWidth } from '../render/font';
 import { Particles } from '../render/particles';
 import { LEVELS } from '../levels/levels';
 import { Boss } from './boss';
+import { CreditsScreen } from './credits';
 import { IntroScreen } from './intro';
 import { Play } from './play';
 import { STAGES, Session, codeAfterBoss, loadScores, recordScore, stageForCode, type ScoreEntry } from './session';
 import { TitleScreen, type MenuItem } from './title';
 
-type Screen = 'intro' | 'title' | 'code' | 'play' | 'reveal' | 'gameover' | 'victory';
+type Screen = 'intro' | 'title' | 'code' | 'play' | 'reveal' | 'gameover' | 'victory' | 'credits';
 
 const STEP = 1 / 120;
 const GAME_TRACKS: MusicTrack[] = ['game1', 'game2', 'game3'];
@@ -21,6 +22,7 @@ const GAME_TRACKS: MusicTrack[] = ['game1', 'game2', 'game3'];
 export class Game {
   private screen: Screen = 'intro';
   private readonly intro = new IntroScreen();
+  private credits: CreditsScreen | null = null;
   private warmed = false;
   private readonly title = new TitleScreen();
   private session: Session | null = null;
@@ -93,6 +95,10 @@ export class Game {
       case 'victory':
         this.updateEndScreens(dt);
         break;
+      case 'credits':
+        this.credits!.update(dt);
+        if (this.credits!.done) this.toTitle();
+        break;
     }
     this.render();
   }
@@ -123,6 +129,7 @@ export class Game {
     return [
       { id: 'play', label: 'JOUER' },
       { id: 'code', label: 'CODE SECTEUR' },
+      { id: 'credits', label: 'CREDITS' },
       { id: 'music', label: `MUSIQUE : ${audio.musicEnabled ? 'OUI' : 'NON'}` },
       { id: 'sfx', label: `SONS : ${audio.sfxEnabled ? 'OUI' : 'NON'}` },
       { id: 'fullscreen', label: 'PLEIN ECRAN' },
@@ -159,6 +166,9 @@ export class Game {
       case 'code':
         this.code = '';
         this.go('code');
+        break;
+      case 'credits':
+        this.startCredits();
         break;
       case 'music':
         audio.toggleMusic();
@@ -331,7 +341,15 @@ export class Game {
     }
   }
 
+  private startCredits(): void {
+    this.credits = new CreditsScreen();
+    input.exitLock();
+    audio.playMusic('victory');
+    this.go('credits');
+  }
+
   private toTitle(): void {
+    this.credits = null;
     this.paused = false;
     audio.setPaused(false);
     audio.setThruster(0);
@@ -354,12 +372,18 @@ export class Game {
     }
     if (this.screen === 'gameover') this.play?.update(STEP * Math.min(1, dt / STEP) * 0.25);
     const ready = this.screenT > 1.5;
+    // The victory screen rolls into the end credits on its own after a while.
+    if (this.screen === 'victory' && this.screenT > 14) {
+      this.startCredits();
+      return;
+    }
     if (ready && (input.mousePressed(0) || input.wasPressed('Enter', 'Space'))) {
       audio.play('menuSelect');
       if (this.screen === 'reveal') {
         this.session!.stageIndex++;
         this.startStage();
-      } else this.toTitle();
+      } else if (this.screen === 'victory') this.startCredits();
+      else this.toTitle();
     }
   }
 
@@ -392,6 +416,9 @@ export class Game {
         break;
       case 'victory':
         this.renderVictory(ctx);
+        break;
+      case 'credits':
+        this.credits!.render(ctx);
         break;
     }
   }
@@ -538,7 +565,7 @@ export class Game {
       const s = this.session!;
       drawText(ctx, `SCORE FINAL  ${pad(s.score, 7)}`, cx, 1130, STYLE.gold, 'center');
       if (s.score > s.startHigh) drawText(ctx, 'NOUVEAU RECORD !', cx, 1230, STYLE.pink, 'center', 0.6 + 0.4 * Math.sin(this.t * 6));
-      drawText(ctx, 'MERCI D AVOIR JOUE  -  CLIC POUR REVENIR AU TITRE', cx, 1340, STYLE.small, 'center', 0.5 + 0.5 * Math.sin(this.t * 3));
+      drawText(ctx, 'MERCI D AVOIR JOUE  -  CLIC POUR LE GENERIQUE', cx, 1340, STYLE.small, 'center', 0.5 + 0.5 * Math.sin(this.t * 3));
     }
   }
 }

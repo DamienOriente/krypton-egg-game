@@ -152,6 +152,8 @@ Sur écran tactile : glisse pour déplacer, touche pour lancer.
 
 Tu démarres avec **4 vies**. Une vie bonus tombe à 20 000, 60 000 et 120 000 points, puis tous les 100 000.
 
+Et si tu vas au bout : **générique de fin façon jeu AAA**, où tous les postes (Musique, Production, Psychologue des briques en or, Stagiaire café…) sont tenus par une seule et même personne, entrecoupé d'une vingtaine de **gags animés façon memes**. Pas envie de battre 6 boss ? Le menu **CRÉDITS** de l'écran titre le lance directement.
+
 <p align="center"><img src="docs/readme/divider.png" alt="" width="100%"></p>
 
 ## ▓▒░ BONUS & MALUS ░▒▓
