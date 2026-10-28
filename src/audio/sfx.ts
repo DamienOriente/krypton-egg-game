@@ -4,7 +4,7 @@
  * noise for blasts. Short tails everywhere; space comes from the shared room send.
  */
 import type { SfxName } from './audio';
-import { clamp, glide, perc, rand } from './core';
+import { clamp, glide, midiToHz, perc, rand } from './core';
 import type { Kit, Shape } from './core';
 import { Voice, hiss, tone } from './voice';
 
@@ -774,3 +774,99 @@ export class Thruster {
   }
 }
 
+// ---------------------------------------------------------------------------
+// DIGINUMIA Game Studio logo intro.
+
+/** Overall level, set from offline loudness against the main SFX (see CLAUDE.md). */
+const LOGO_LEVEL = 0.44;
+const LOGO_SEND = 0.3;
+/** The logo video lasts 4 s; the room tail rings a little past it. */
+export const LOGO_STING_SECONDS = 4.3;
+
+/**
+ * Sound for the 4 s DGS logo video, hand-synced to timings measured on the video:
+ * light sweep 0.55 → 1.40 s (letters D / G / S complete at 0.85 / 1.12 / 1.40 s,
+ * wipe from x = 15 % to 84 % of the frame), subtitle wipe 1.67 → 1.95 s,
+ * fade to black 3.30 → 3.90 s. E major throughout: it resolves onto the A-minor
+ * title theme that follows (E is its dominant).
+ */
+export function spawnLogoSting(kit: Kit, t: number, dest: AudioNode, send: AudioNode): Voice {
+  const v = new Voice(kit, t, LOGO_LEVEL);
+  v.out.connect(dest);
+  const s = kit.ctx.createGain();
+  s.gain.value = LOGO_SEND;
+  v.out.connect(s);
+  s.connect(send);
+  v.own(s);
+  try {
+    logoSting(v);
+  } catch (err) {
+    v.kill(t);
+    v.dispose();
+    throw err;
+  }
+  v.disposeWhenDone();
+  return v;
+}
+
+function logoSting(v: Voice): void {
+  const T = v.t;
+
+  // 1. Out of the black: an airy swell and a low E rising into the first light (0.05 → 0.55 s).
+  hiss(v, { kind: 'pink', at: 0.05, peak: 0.08, a: 0.48, d: 0.14, type: 'bandpass', f: 320, to: 2600, glide: 0.5, q: 1.2 });
+  tone(v, { f: midiToHz(40), at: 0.05, peak: 0.14, a: 0.5, d: 0.45 });
+  tone(v, { shape: 'triangle', f: midiToHz(52), at: 0.15, peak: 0.05, a: 0.4, d: 0.3 });
+
+  // 2. The light blade (0.55 → 1.40 s): bright air panned along the wipe, a scanner tone rising an octave.
+  const blade = v.pan(v.out, -0.69);
+  blade.pan.setValueAtTime(-0.69, T + 0.57);
+  blade.pan.linearRampToValueAtTime(-0.21, T + 0.85);
+  blade.pan.linearRampToValueAtTime(0.2, T + 1.12);
+  blade.pan.linearRampToValueAtTime(0.68, T + 1.4);
+  hiss(v, { at: 0.53, peak: 0.22, a: 0.05, hold: 0.72, d: 0.18, type: 'bandpass', f: 2400, to: 6500, glide: 0.9, q: 2.5, dest: blade });
+  hiss(v, { kind: 'pink', at: 0.53, peak: 0.16, a: 0.06, hold: 0.7, d: 0.2, type: 'lowpass', f: 900, to: 2200, glide: 0.9, dest: blade });
+  const scan = v.filter(blade, 'lowpass', 1800, 0.7);
+  for (const detune of [-7, 7]) {
+    tone(v, { shape: 'sawtooth', f: midiToHz(64), to: midiToHz(76), glide: 0.85, at: 0.55, peak: 0.07, a: 0.08, hold: 0.62, d: 0.2, dest: scan, detune });
+  }
+
+  // 3. One glass note per letter as the light finishes it: E5, G#5, B5.
+  glassPing(v, E5, 0.84, 0.3, -0.45);
+  glassPing(v, E5 * semi(4), 1.11, 0.3, 0);
+  glassPing(v, E5 * semi(7), 1.38, 0.3, 0.45);
+
+  // 4. Lock-in at 1.42 s: low boom, damped metal and a bright octave on top.
+  boom(v, 1.41, 0.9, 0.9);
+  clank(v, midiToHz(52), 1.41, 0.22, 0.55);
+  glassPing(v, E5 * 2, 1.42, 0.28, 0, 1.2);
+
+  // 5. Pad bloom (E add9) under the held logo, closing with the fade to black.
+  const padLp = v.filter(v.out, 'lowpass', 400, 0.6);
+  padLp.frequency.setValueAtTime(400, T + 1.42);
+  padLp.frequency.exponentialRampToValueAtTime(2600, T + 2.1);
+  padLp.frequency.setValueAtTime(2600, T + 3.3);
+  padLp.frequency.exponentialRampToValueAtTime(500, T + 3.95);
+  const pad = v.gain(padLp);
+  pad.gain.setValueAtTime(0, T + 1.41);
+  pad.gain.linearRampToValueAtTime(1, T + 1.75);
+  pad.gain.setValueAtTime(1, T + 3.3);
+  pad.gain.exponentialRampToValueAtTime(0.001, T + 3.95);
+  pad.gain.setValueAtTime(0, T + 3.96);
+  const chord: ReadonlyArray<readonly [number, number]> = [[40, 0], [47, -0.35], [52, 0.35], [56, -0.2], [59, 0.2], [66, 0]];
+  for (const [note, pan] of chord) {
+    const g = v.gain(v.pan(pad, pan), 0.045);
+    for (const detune of [-9, 9]) {
+      const o = v.osc('sawtooth', midiToHz(note), g, T + 1.41, T + 4);
+      o.detune.value = detune;
+    }
+  }
+
+  // 6. Subtitle wipe (1.67 → 1.97 s): chip glints running left to right with the text.
+  const glints = [88, 90, 92, 95, 97, 100];
+  for (let i = 0; i < 10; i++) {
+    chip(v, midiToHz(glints[i % glints.length]!), 1.67 + i * 0.03, 0.02, 0.11, { pan: -0.63 + (1.3 * i) / 9, bright: 3 });
+  }
+
+  // 7. A soft falling breath with the fade to black.
+  hiss(v, { kind: 'pink', at: 3.28, peak: 0.06, a: 0.25, d: 0.45, type: 'bandpass', f: 2200, to: 300, glide: 0.65, q: 0.9 });
+}

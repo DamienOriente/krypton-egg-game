@@ -2,23 +2,26 @@ import { VIEW_H, VIEW_W } from '../config';
 import { TAU, clamp, easeOutBack, pad, rand } from '../core/math';
 import { input } from '../core/input';
 import { audio, type MusicTrack } from '../audio/audio';
-import { titleBackground } from '../render/background';
+import { background, titleBackground } from '../render/background';
 import { drawGlow, roundRectPath, type Ctx } from '../render/canvas';
 import { drawText, STYLE, textWidth } from '../render/font';
 import { Particles } from '../render/particles';
 import { LEVELS } from '../levels/levels';
 import { Boss } from './boss';
+import { IntroScreen } from './intro';
 import { Play } from './play';
 import { STAGES, Session, codeAfterBoss, loadScores, recordScore, stageForCode, type ScoreEntry } from './session';
 import { TitleScreen, type MenuItem } from './title';
 
-type Screen = 'title' | 'code' | 'play' | 'reveal' | 'gameover' | 'victory';
+type Screen = 'intro' | 'title' | 'code' | 'play' | 'reveal' | 'gameover' | 'victory';
 
 const STEP = 1 / 120;
 const GAME_TRACKS: MusicTrack[] = ['game1', 'game2', 'game3'];
 
 export class Game {
-  private screen: Screen = 'title';
+  private screen: Screen = 'intro';
+  private readonly intro = new IntroScreen();
+  private warmed = false;
   private readonly title = new TitleScreen();
   private session: Session | null = null;
   private play: Play | null = null;
@@ -72,6 +75,9 @@ export class Game {
     }
 
     switch (this.screen) {
+      case 'intro':
+        this.updateIntro();
+        break;
       case 'title':
         this.updateTitle(dt);
         break;
@@ -88,6 +94,21 @@ export class Game {
         break;
     }
     this.render();
+  }
+
+  private updateIntro(): void {
+    if (input.anyPressed) this.intro.onInput();
+    this.intro.update();
+    if (!this.warmed && (this.intro.still || this.intro.done)) {
+      // Title and first playfield textures (per-pixel wood) take ~150 ms: build them on a still frame.
+      this.warmed = true;
+      titleBackground();
+      background(0);
+    }
+    if (this.intro.done) {
+      audio.playMusic('title');
+      this.go('title');
+    }
   }
 
   private go(screen: Screen): void {
@@ -342,6 +363,9 @@ export class Game {
   private render(): void {
     const ctx = this.ctx;
     switch (this.screen) {
+      case 'intro':
+        this.intro.render(ctx);
+        break;
       case 'title':
         this.title.render(ctx, this.titleItems(), this.scores, input.pointerX, audio.ready);
         break;

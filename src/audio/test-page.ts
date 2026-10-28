@@ -126,6 +126,10 @@ function main(): void {
     for (let i = 0; i < 10; i++) audio.play('wall');
     say('Only one wall knock should be heard (25 ms retrigger guard).');
   });
+  button(seq, 'DGS logo intro (4 s)', () => {
+    audio.playLogoSting();
+    say('Logo sting: swell, light sweep L→R, D/G/S glass notes, lock-in, subtitle glints, fade.');
+  });
 
   const mus = section(app, 'Music');
   let paused = false;
