@@ -61,4 +61,5 @@ Remake web du casse-briques Krypton Egg (1989). Vite 8 + TypeScript 7 strict, Ca
 - 2026-10-28 : générique de fin « Claudo » + 23 gags memes, menu CRÉDITS.
 - 2026-10-28 : release v0.2.0 (intro DGS, touches P/M, séisme des boss, générique).
 - 2026-10-29 : publication itch.io préparée (CI butler, visuels et textes) ; page et clés à créer par Damien.
+- 2026-10-29 : page itch.io créée en brouillon (`damiodev/krypton-egg-remake`), variable `ITCH_TARGET` posée ; release v0.2.1 = premier envoi itch.io (web, Mac, Windows).
 - Reste à valider à l'oreille : SFX et musiques (vérifiés par mesure uniquement, voir `/audio-test.html`).
